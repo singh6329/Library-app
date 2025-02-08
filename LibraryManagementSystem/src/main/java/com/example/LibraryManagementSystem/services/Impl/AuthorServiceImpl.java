@@ -10,8 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 @Service
@@ -20,6 +23,7 @@ import java.util.List;
 public class AuthorServiceImpl implements AuthorService {
     private final ModelMapper modelMapper;
     private final AuthorRepository authorRepository;
+    private final String CACHE_NAME = "Authors";
 
     @Override
     public List<AuthorDto> getAllAuthors() {
@@ -29,6 +33,7 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Cacheable(cacheNames = CACHE_NAME,key = "#name")
     public List<AuthorDto> getAuthorByName(String name) {
         List<Author> authors = authorRepository.findByName(name);
         log.info("Successfully fetched all Authors with respect to given name!");
@@ -36,6 +41,7 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Cacheable(cacheNames = CACHE_NAME,key = "#id")
     public AuthorDto getAuthorById(Long id) {
         Author author = authorRepository.findById(id)
                 .orElseThrow(()->{
@@ -47,6 +53,7 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @CachePut(cacheNames = CACHE_NAME,key = "#result.id")
     public AuthorDto createAuthor(AuthorDto authorDto) {
         Author author = modelMapper.map(authorDto,Author.class);
         Author savedAuthor = authorRepository.save(author);
@@ -55,6 +62,7 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @CacheEvict(cacheNames = CACHE_NAME,key = "#id")
     public void deleteAuthor(Long id) {
         Author author = authorRepository.findById(id)
                 .orElseThrow(()-> {
@@ -66,6 +74,7 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @CachePut(cacheNames = CACHE_NAME,key = "#id")
     public AuthorDto updateAuthorById(Long id, AuthorDto authorDto) {
         Author author = modelMapper.map(authorDto,Author.class);
         author.setId(id);
